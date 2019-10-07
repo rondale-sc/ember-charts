@@ -378,7 +378,7 @@ const PieChartComponent = ChartComponent.extend(FloatingTooltipMixin,
   // ----------------------------------------------------------------------------
 
   legendItems: Ember.computed('otherData', 'rejectedData', function() {
-    return this.get('otherData').concat(this.get('rejectedData'));
+    return this.get('sortedData');
   }),
 
   hasLegend: Ember.computed('legendItems.length', 'showLegend', function() {

@@ -127,40 +127,50 @@ const PieLegendMixin = Ember.Mixin.create({
     var labels = legend.append('g').attr('class', 'labels');
     var labelStrings = this.get('legendItems').map(function(d) {
       if (d.percent != null) {
-        return "" + d.label + " (" + d.percent + "%)";
+        return { labelString: "" + d.label + " (" + Math.floor(d.percent) + "%)", color: d.color }
       } else {
-        return d.label;
+        return { labelString: d.label, color: d.color };
       }
     });
-    var row = labels.append('text')
-                .text(this.get('otherLabel') + ": " + labelStrings[0])
-                .attr(this.get('legendLabelAttrs'));
 
-    // Try adding each label. If that makes the current line too long,
-    // remove it and insert the label on the next line in its own <text>
-    // element, incrementing labelTop. Stop adding rows if that would
-    // cause labelTop to exceed the space allocated for the legend.
-    var labelTop = 0;
+    let runningWidth = 0;
+    let padding = 5;
+    let containerBounds = this.get('viewport').node().getBBox();
+    debugger;
+    console.log(containerBounds);
 
-    const remainingLabelStrings = labelStrings.slice(1);
-    for (var i = 0; i < remainingLabelStrings.length; i++) {
-      let nextLabel = remainingLabelStrings[i];
-      currentText = row.text();
-      row.text("" + currentText + ", " + nextLabel);
-      rowNode = row.node();
-      if (rowNode.getBBox().width > this.get('legendWidth')) {
-        if (labelTop + rowNode.getBBox().height > this.get('maxLabelHeight')) {
-          row.text("" + currentText + ", ...");
-          break;
-        } else {
-          row.text("" + currentText + ",");
-          labelTop += rowNode.getBBox().height;
-          row = labels.append('text').text(nextLabel).attr(this.get('legendLabelAttrs')).attr('dy', labelTop);
-        }
+    /*
+     * 1.) Loop over labstrings and add total lenght of item to a running width
+     * 2.) any time the runningWidth is greater than containerWidth cut a new row
+    */
+
+    let lastRow = labels.append('g').attr('class', 'row');
+
+    labelStrings.forEach(({ labelString, color }) => {
+
+      if (lastRow.node().getBBox().width > containerBounds.width - 100) {
+        lastRow = labels.append('g').attr('class', 'row');
       }
-    }
-    // Align the lowermost row of the block of labels against the bottom margin
-    return labels.attr('transform', "translate(0, " + (-labelTop) + ")");
+
+      let box = lastRow
+        .append('rect')
+        .attr('width', 14)
+        .attr('height', 14)
+        .style('fill', color);
+
+      box.attr('transform', `translate(${runningWidth}, 0)`);
+
+      let boxWidth = box.node().getBBox().width + runningWidth + 5; // 5 is padding
+
+      let label = lastRow
+        .append('text')
+        .text(labelString);
+
+      label.attr('transform', `translate(${boxWidth},10)`);
+      runningWidth+=label.node().getBBox().width + 14 + 10;
+    });
+
+    legend.selectAll('.row').style('transform', 'translate(-37%, -14%)');
   }
 });
 
